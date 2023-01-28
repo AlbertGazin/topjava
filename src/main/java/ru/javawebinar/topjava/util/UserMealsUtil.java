@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Month;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class UserMealsUtil {
     public static void main(String[] args) {
@@ -23,6 +24,11 @@ public class UserMealsUtil {
 
         List<UserMealWithExcess> mealsTo = filteredByCycles(meals, LocalTime.of(7, 0), LocalTime.of(13, 10), 2000);
         mealsTo.forEach(System.out::println);
+
+        System.out.println("------------------");
+
+        List<UserMealWithExcess> mealsTo2 = filteredByStreams(meals, LocalTime.of(7, 0), LocalTime.of(13, 10), 2000);
+        mealsTo2.forEach(System.out::println);
     }
 
     public static List<UserMealWithExcess> filteredByCycles(List<UserMeal> meals, LocalTime startTime,
@@ -54,6 +60,16 @@ public class UserMealsUtil {
             LocalTime startTime, LocalTime endTime,
             int caloriesPerDay
     ) {
-        return null;
+        Map<LocalDate, Integer> dayAndCalories = meals.stream().collect(
+                Collectors.toMap(userMeal -> userMeal.getDateTime().toLocalDate(), UserMeal::getCalories,
+                        Integer::sum));
+
+        return meals.stream()
+                .filter(
+                        userMeal -> TimeUtil.isBetweenHalfOpen(userMeal.getDateTime().toLocalTime(), startTime, endTime)
+                )
+                .map(o -> new UserMealWithExcess(o.getDateTime(), o.getDescription(), o.getCalories(),
+                        dayAndCalories.get(o.getDateTime().toLocalDate()) > caloriesPerDay))
+                .collect(Collectors.toList());
     }
 }
